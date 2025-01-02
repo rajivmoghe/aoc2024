@@ -1,5 +1,5 @@
 
-BLINK_COUNT = 75
+BLINK_COUNT = 1000
 
 
 def new_arrangement(array1, iter): # See how the array will behave for each iteration
@@ -42,20 +42,25 @@ def get_counts_for(stone_map, iter):
             new_map[a_count] += stone_map[a_key]
             pass
         pass
-
     pass
     return new_map
 
-arrangement = [int(y) for y in open('aoc11-inp.txt').read().strip().split()]
+# arrangement = [int(y) for y in open('aoc11-inp.txt').read().strip().split()]
 # arrangement = [0, 0]
+arrangement = [0, 89741, 316108, 7641, 756, 9, 7832357, 91]
 
 from collections import Counter
 stone_map =  dict(Counter(arrangement))
 
+import time
+start = time.perf_counter()
 for i in range(BLINK_COUNT):
-    print(i)
+    # print(i)
     # arrangement = new_arrangement(arrangement, i)
     stone_map = get_counts_for(stone_map, i)
-    
+end = time.perf_counter()
 
-print('\nArray length:', sum(stone_map.values()), len(arrangement))
+print(f"Input = {arrangement}")
+print(f"Elapsed time for {BLINK_COUNT} iter = {(end - start):.6f} sec ")
+print(f"stone_map keys count = {len(stone_map.keys())}")
+print('Array length:', sum(stone_map.values()), len(arrangement))
