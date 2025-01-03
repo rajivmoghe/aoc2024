@@ -1,68 +1,85 @@
 from collections import deque, defaultdict
 
-def calculate_regions(grid):
+def find_regions_and_aggregates(grid):
     """
-    Calculate the area and boundary length for each region in a grid.
-    :param grid: List of lists representing the 2D grid.
-    :return: Dictionary containing regions and their areas and boundaries.
+    Finds individual region parameters and aggregated totals for each object type.
+
+    Parameters:
+    grid (list[list[str]]): 2D grid containing object types as elements.
+
+    Returns:
+    tuple: (regions, aggregates)
+           regions: dict with {(object_type, region_id): (area, boundary)}
+           aggregates: dict with {object_type: (total_area, total_boundary)}
     """
     rows, cols = len(grid), len(grid[0])
     visited = [[False] * cols for _ in range(rows)]  # Track visited cells
-    regions = defaultdict(lambda: {"area": 0, "boundary": 0})  # Store results
-    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]  # Up, down, left, right
+    regions = {}  # Individual region data
+    aggregates = defaultdict(lambda: [0, 0])  # Aggregated totals for each object type
+    region_id = 0  # Unique ID for each region
+
+    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]  # Neighbor directions
 
     def bfs(start_row, start_col):
-        """
-        Perform BFS to explore a region and calculate its area and boundary.
-        :param start_row: Starting row index.
-        :param start_col: Starting column index.
-        :return: None. Updates `regions` dictionary directly.
-        """
+        """Perform BFS to traverse the region and calculate area and boundary."""
+        nonlocal region_id
+        obj_type = grid[start_row][start_col]
         queue = deque([(start_row, start_col)])
         visited[start_row][start_col] = True
-        region_type = grid[start_row][start_col]
         area = 0
         boundary = 0
 
         while queue:
-            row, col = queue.popleft()
-            area += 1  # Increment area for the current cell
+            r, c = queue.popleft()
+            area += 1
 
-            # Check all four neighbors
+            # Check all 4 neighbors
             for dr, dc in directions:
-                nr, nc = row + dr, col + dc
-
-                # If out of bounds or a different type, count as boundary
-                if not (0 <= nr < rows and 0 <= nc < cols) or grid[nr][nc] != region_type:
+                nr, nc = r + dr, c + dc
+                if 0 <= nr < rows and 0 <= nc < cols:
+                    if grid[nr][nc] == obj_type and not visited[nr][nc]:
+                        visited[nr][nc] = True
+                        queue.append((nr, nc))
+                    elif grid[nr][nc] != obj_type:
+                        boundary += 1
+                else:
+                    # Out-of-bounds contributes to the boundary
                     boundary += 1
-                # If valid neighbor and not visited, add to queue
-                elif not visited[nr][nc]:
-                    visited[nr][nc] = True
-                    queue.append((nr, nc))
 
-        # Update region info
-        regions[region_type]["area"] += area
-        regions[region_type]["boundary"] += boundary
+        # Save individual region data
+        regions[(obj_type, region_id)] = (area, boundary)
 
-    # Traverse the grid
+        # Update aggregate data
+        aggregates[obj_type][0] += area
+        aggregates[obj_type][1] += boundary
+
+        region_id += 1
+
+    # Traverse the grid to identify all regions
     for r in range(rows):
         for c in range(cols):
-            if not visited[r][c]:  # Unvisited cell, start a new region
+            if not visited[r][c]:
                 bfs(r, c)
 
-    return regions
+    return regions, aggregates
 
 
-# Example Usage
-import random
+# Example usage
+if __name__ == "__main__":
+    # Example 100x100 grid with up to 100 object types (use smaller for demonstration)
+    import random
+    random.seed(42)
+    object_types = [chr(65 + i) for i in range(26)]  # Object types: 'A' to 'Z'
+    grid = [[random.choice(object_types) for _ in range(100)] for _ in range(100)]
 
-# Generate a 100x100 grid with 100+ object types
-object_types = [f"O{i}" for i in range(1, 101)]  # Object types: Obj1, Obj2, ..., Obj100
-grid = [[random.choice(object_types) for _ in range(100)] for _ in range(100)]
+    # Process the grid
+    regions, aggregates = find_regions_and_aggregates(grid)
 
-# Calculate regions
-regions = calculate_regions(grid)
-print(grid)
-# Display results
-for region, info in regions.items():
-    print(f"Region {region}: Area = {info['area']}, Boundary = {info['boundary']}")
+    # Print results
+    print("Individual Regions:")
+    for (obj_type, region_id), (area, boundary) in list(regions.items())[:10]:  # Show only first 10 for brevity
+        print(f"Object: {obj_type}, Region ID: {region_id}, Area: {area}, Boundary: {boundary}")
+
+    print("\nAggregated Totals:")
+    for obj_type, (total_area, total_boundary) in aggregates.items():
+        print(f"Object: {obj_type}, Total Area: {total_area}, Total Boundary: {total_boundary}")

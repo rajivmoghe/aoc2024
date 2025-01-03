@@ -52,15 +52,27 @@ arrangement = [0, 89741, 316108, 7641, 756, 9, 7832357, 91]
 from collections import Counter
 stone_map =  dict(Counter(arrangement))
 
+import cProfile, pstats,io
+from pstats import SortKey
 import time
 start = time.perf_counter()
+pr = cProfile.Profile()
+pr.enable()
 for i in range(BLINK_COUNT):
     # print(i)
     # arrangement = new_arrangement(arrangement, i)
     stone_map = get_counts_for(stone_map, i)
+pr.disable()
 end = time.perf_counter()
 
 print(f"Input = {arrangement}")
 print(f"Elapsed time for {BLINK_COUNT} iter = {(end - start):.6f} sec ")
 print(f"stone_map keys count = {len(stone_map.keys())}")
 print('Array length:', sum(stone_map.values()), len(arrangement))
+print()
+
+s = io.StringIO()
+sortby = SortKey.CUMULATIVE
+ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+ps.print_stats()
+print(s.getvalue())
