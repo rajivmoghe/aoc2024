@@ -26,12 +26,6 @@ def build_graph(rules):
             invert_graph[Y] = set()
         invert_graph[Y].add(X)
 
-    # print(f"Invert_graph:")
-    # for aKey in sorted(invert_graph.keys()):
-    #     print(f"Priors {aKey}: {invert_graph[aKey]}")
-    #     print(f"Afters {aKey}: {graph.get(aKey , None)}")
-    # print(f"End of invert_graph \n")
-
     return graph, invert_graph
 
 
@@ -61,6 +55,51 @@ def validate_update(afters, priors, one_update):
     return valid_updates
 
 
+def part1(line_graph, opp_graph, updates):
+    midsum, good, bad = 0, 0, 0
+    for i, anupdate in enumerate(updates):
+        update_valid = validate_update(line_graph, opp_graph, anupdate)
+        if update_valid:
+            good += 1
+        else:
+            bad += 1
+        # print(f"{i+1:3d} Update {anupdate} is {'OK' if update_valid else 'Bad.'}", end=' ' if update_valid else '\n')
+        if update_valid:
+            # print(f"mid {len(anupdate)//2}, value {anupdate[len(anupdate)//2]}")
+            midsum += anupdate[len(anupdate)//2]
+    print(
+        f"Sum of middle pages is : {midsum}.\n Good count {good} \t Bad Count {bad}")
+
+
+def misplace(afters, priors, one_update):
+
+    # print(f" Seeking misplaced for {one_update}")
+
+    def check_place(first, second, afters, priors):
+        chklist_aft = afters.get(first, set())
+        chklist_prv = priors.get(second, set())
+        second_is_behind = second in chklist_aft
+        first_is_before = first in chklist_prv
+        return first_is_before and second_is_behind
+
+    left, right, isValid = -1, -1, None
+
+    for ji_ in range(len(one_update)):
+        for jj_ in range(ji_+1, len(one_update)):
+            isValid = check_place(
+                one_update[ji_], one_update[jj_], afters, priors)
+            if not isValid:
+                left = ji_
+                right = jj_
+                break
+        if isValid is not None and isValid is False:
+            break
+
+    # print(isValid, left, right)
+
+    return left, right
+
+
 test = 0
 filename = "aoc05-inp.txt" if test else "aoc05-inp copy.txt"
 
@@ -68,22 +107,22 @@ rules, updates = parse_input(filename)
 # print(f"Parsed input: \n\tRules  : {rules} \n\n \tUpdates: {updates}")
 
 line_graph, opp_graph = build_graph(rules)
+# print('', line_graph, '\n', opp_graph)
 
-midsum = 0
-good, bad = 0,0
+# part1(line_graph, opp_graph, updates)
+
+midsum2 = 0
 for i, anupdate in enumerate(updates):
-    update_valid = validate_update(line_graph, opp_graph, anupdate)
-    if update_valid:
-        good += 1
+    if not validate_update(line_graph, opp_graph, anupdate):
+        print(f"Checking\t{anupdate}")
+        while not validate_update(line_graph, opp_graph, anupdate):
+            p, q = misplace(line_graph, opp_graph, anupdate)
+            # print("Swithced", p, q)
+            anupdate[p], anupdate[q] = anupdate[q], anupdate[p]
+            print(
+                f" Switch {p:2d} {q:2d}   {anupdate} is {validate_update(line_graph, opp_graph, anupdate)}")
+        midsum2 += anupdate[len(anupdate)//2]
     else:
-        bad += 1
-    # print(f"{i+1:3d} Update {anupdate} is {'OK' if update_valid else 'Bad.'}", end=' ' if update_valid else '\n')
-    if update_valid:
-        # print(f"mid {len(anupdate)//2}, value {anupdate[len(anupdate)//2]}")
-        midsum += anupdate[len(anupdate)//2]
-print(f"Sum of middle pages is : {midsum}.\n Good count {good} \t Bad Count {bad}")
-
-
-# print(f"Rules Graph: Keys: {len(line_graph)}")
-# for aKey in sorted(line_graph.keys()):
-#     print(f"{aKey}: {line_graph[aKey]}")
+        print(f"Checking\t{anupdate} --->  OK")
+    
+print(f"Sum of correctred updates midnums is {midsum2}")
